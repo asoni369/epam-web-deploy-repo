@@ -44,8 +44,8 @@ resource "aws_apigatewayv2_route" "route" {
   route_key = "ANY /{proxy+}" # Catch-all route for all paths]"
   target    = "integrations/${aws_apigatewayv2_integration.alb_integration.id}"
 
-  authorization_type = "JWT"
-  authorizer_id      = aws_apigatewayv2_authorizer.jwt.id
+  # authorization_type = "JWT"
+  # authorizer_id      = aws_apigatewayv2_authorizer.jwt.id
 }
 
 resource "aws_apigatewayv2_stage" "stage" {
