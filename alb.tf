@@ -16,8 +16,31 @@ resource "aws_security_group" "alb_sg" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
 }
+
+# ALB Logging
+resource "aws_s3_bucket" "alb_logs" {
+  bucket = "epam-demo-alb-logs-bucket"
+}
+
+resource "aws_s3_bucket_policy" "alb_logs_policy" {
+  bucket = aws_s3_bucket.alb_logs.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "AWSALBLogsPolicy"
+        Effect    = "Allow"
+        Principal = {
+          Service = "delivery.logs.amazonaws.com"
+        }
+        Action    = "s3:PutObject"
+        Resource  = "${aws_s3_bucket.alb_logs.arn}/AWSLogs/${data.aws_caller_identity.current.account_id}/*"
+      }
+    ]
+  })
+}
+
 
 resource "aws_lb" "app_alb" {
   name               = "epam-alb-${var.TF_VAR_env}"
@@ -25,6 +48,13 @@ resource "aws_lb" "app_alb" {
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb_sg.id]
   subnets            = module.vpc.private_subnets
+
+  access_logs {
+    bucket  = aws_s3_bucket.alb_logs.bucket
+    enabled = true
+    prefix  = "alb-access-logs"
+  }
+  enable_deletion_protection = false
 
   tags = merge({
     Name = "app-alb-${var.TF_VAR_env}"
